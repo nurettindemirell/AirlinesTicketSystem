@@ -1,5 +1,5 @@
 {
-    "name": "miles-service",
+    "name": "MembershipService",
     "version": "1.0.0",
     "description": "Miles Service for SE4458 Flight System - handles MilesSmiles points and ledger",
     "main": "src/index.js",

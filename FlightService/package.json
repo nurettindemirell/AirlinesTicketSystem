@@ -1,5 +1,5 @@
 {
-    "name": "flight-service",
+    "name": "FlightService",
     "version": "1.0.0",
     "description": "Flight Service for SE4458 Flight System - handles flights, tickets, admin operations",
     "main": "src/index.js",

@@ -1,23 +1,23 @@
 {
   "model": "randomforest-v2",
   "trained_on": "kaggle-datasets-real",
-  "training_date": "2026-01-10T21:51:16.439995",
+  "training_date": "2026-01-12T09:17:16.161064",
   "confidence": 0.95,
   "metrics": {
     "RandomForest": {
-      "mae": 31.399,
-      "rmse": 45.269,
-      "r2": 0.977
+      "mae": 0.0,
+      "rmse": 0.0,
+      "r2": 1.0
     },
     "GradientBoosting": {
-      "mae": 31.717,
-      "rmse": 44.343,
-      "r2": 0.978
+      "mae": 0.005,
+      "rmse": 0.006,
+      "r2": 1.0
     },
     "LinearRegression": {
-      "mae": 62.112,
-      "rmse": 86.076,
-      "r2": 0.915
+      "mae": 133.537,
+      "rmse": 165.652,
+      "r2": 0.299
     }
   },
   "features": [
@@ -35,12 +35,12 @@
     "distance_km"
   ],
   "coefficients": {
-    "basePrice": 60.0,
-    "durationCoef": 45.50935278354329,
-    "peakHourCoef": 5.273441555651293,
-    "weekendCoef": 1.368507626500228,
-    "directFlightPremium": 2.2535963651709445,
-    "internationalMultiplier": 1.0,
-    "busyMonthMultiplier": 1.0026127183285343
+    "basePrice": 120.0,
+    "durationCoef": 0.47119799613706287,
+    "peakHourCoef": 45.0,
+    "weekendCoef": 35.0,
+    "directFlightPremium": 70.61428649712927,
+    "internationalMultiplier": 1.75,
+    "busyMonthMultiplier": 1.12
   }
 }

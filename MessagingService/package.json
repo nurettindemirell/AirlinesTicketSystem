@@ -1,5 +1,5 @@
 {
-    "name": "notification-service",
+    "name": "MessagingService",
     "version": "1.0.0",
     "description": "Notification Service for SE4458 Flight System - handles emails via Gmail SMTP",
     "main": "src/index.js",

@@ -127,7 +127,7 @@ app.get('/api/v1/tickets/health', (req, res) => {
 // ADMIN ENDPOINTS (TEMPORARY: Auth disabled for testing)
 // ============================================
 
-// POST /api/v1/admin/flights - Yeni uçuş ekle (GEÇİCİ: Auth kapalı test için)
+// POST /api/v1/admin/flights - Yeni uçuş ekle
 app.post('/api/v1/admin/flights', async (req, res) => {
     try {
         const {
@@ -706,7 +706,7 @@ app.post('/api/v1/bookings', optionalAuth, async (req, res) => {
             departure_time: flight.departure_time,
             arrival_time: flight.arrival_time,
             passengers: passenger_count,
-            total_price,
+            total_price: totalPrice,
             contact_email: passenger_details.email,
             passenger_names: `${passenger_details.first_name} ${passenger_details.last_name}`,
             seats_booked: passenger_count
@@ -717,11 +717,8 @@ app.post('/api/v1/bookings', optionalAuth, async (req, res) => {
         if (flight.id) await cache.del(`cache:flight:${flight.id}`); // Uçuş detay önbelleğini temizle
         console.log('🗑️  Cache invalidated after booking');
 
-        res.status(201).json({
-            message: 'Booking successful',
-            booking
-        });
-        // 5. Eğer parayla alındıysa ve üyeyse Mil Puanı ver
+        // Response block moved to end to prevent double-send
+
         console.log(`💳 Booking Complete - Payment: ${payment_method}, MemberID: ${finalMemberId}`);
 
         if (payment_method === 'MONEY' && finalMemberId) {
@@ -767,7 +764,8 @@ app.post('/api/v1/bookings', optionalAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Booking error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        require('fs').writeFileSync('error_log.txt', new Date().toISOString() + ' - ' + (error.stack || error.message) + '\n');
+        res.status(500).json({ error: 'Internal server error: ' + error.message });
     }
 });
 

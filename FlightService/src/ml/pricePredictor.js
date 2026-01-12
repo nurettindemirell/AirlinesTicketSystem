@@ -1,40 +1,33 @@
 /**
  * ML Price Prediction Module
- * Based on Kaggle datasets:
- * - https://www.kaggle.com/datasets/dilwong/flightprices
- * - https://www.kaggle.com/datasets/shubhambathwal/flight-price-prediction
+ * Migrated from PredictionService (Python)
  * 
- * Features used for prediction:
- * - Duration (minutes)
- * - Departure hour and day of week
- * - Days until departure
- * - Is direct flight
- * - Route type (domestic/international)
- * - Month/season (busy periods)
- * 
- * Model works for ANY destination, not limited to specific routes in training data.
- * Uses distance estimation and route characteristics for generalization.
+ * Features used for prediction (6 Core Features):
+ * 1. Duration (minutes)
+ * 2. Peak Hour (Departure Time)
+ * 3. Days Advance (Booking Timing)
+ * 4. Is Direct Flight
+ * 5. Route Type (International/Domestic)
+ * 6. Is Weekend
  */
 
-// Load trained model coefficients from JSON file
-// Updated with RandomForest model (R² = 0.977, MAE = $31.40)
+// Default coefficients (fallback)
 let MODEL_COEFFICIENTS = {
-    basePrice: 60.0,
-    durationCoef: 0.18,      // Will be updated from model
-    peakHourCoef: 30,
-    weekendCoef: 40,
-    lastMinuteCoef: 0.85,
-    advanceBookingDiscount: 0.015,
-    directFlightPremium: 50,
-    internationalMultiplier: 1.9,
-    busyMonthMultiplier: 1.15,
-    offPeakDiscount: 0.15,
+    base_price: 120.0,
+    duration_coef: 0.35,
+    peak_hour_premium: 40.0,
+    weekend_premium: 50.0,
+    direct_flight_premium: 60.0,
+    international_multiplier: 1.7,
+    last_minute_surge: 0.90,
+    advance_discount: 0.02,
+    busy_month_multiplier: 1.15,
+    off_peak_discount: 0.10
 };
 
-// Model confidence (from training)
-let MODEL_CONFIDENCE = 0.95; // 95% from RandomForest model
+let MODEL_CONFIDENCE = 0.94;
 
-// Try to load coefficients from trained model
+// Load trained model coefficients from JSON file
 try {
     const fs = require('fs');
     const path = require('path');
@@ -42,17 +35,29 @@ try {
     if (fs.existsSync(modelPath)) {
         const modelData = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
         if (modelData.coefficients) {
-            // Merge with defaults (model may not have all coefficients)
-            MODEL_COEFFICIENTS = { ...MODEL_COEFFICIENTS, ...modelData.coefficients };
-            MODEL_CONFIDENCE = modelData.confidence || 0.95;
+            const c = modelData.coefficients;
+            // Map JSON keys to our internal keys
+            MODEL_COEFFICIENTS = {
+                base_price: c.basePrice || 120.0,
+                duration_coef: c.durationCoef || 0.35,
+                peak_hour_premium: c.peakHourCoef || 40.0,
+                weekend_premium: c.weekendCoef || 50.0,
+                direct_flight_premium: c.directFlightPremium || 60.0,
+                international_multiplier: c.internationalMultiplier || 1.7,
+                last_minute_surge: c.lastMinuteCoef || 0.90,
+                advance_discount: c.advanceBookingDiscount || 0.02,
+                busy_month_multiplier: c.busyMonthMultiplier || 1.15,
+                off_peak_discount: c.offPeakDiscount || 0.10
+            };
+            MODEL_CONFIDENCE = modelData.confidence || 0.94;
+            console.log('🧠 Loaded trained ML model coefficients from ' + modelPath);
         }
     }
 } catch (err) {
-    console.log('⚠️  Could not load model coefficients, using defaults');
+    console.log('⚠️  Could not load model coefficients, using defaults', err.message);
 }
 
-// Airport country mapping for international detection (extended list)
-// Model works for ANY airport - if not in list, estimates based on route characteristics
+// Airport country mapping (Extended list for better detection)
 const AIRPORT_COUNTRIES = {
     // Turkey
     'IST': 'Turkey', 'SAW': 'Turkey', 'ESB': 'Turkey', 'ADB': 'Turkey', 'AYT': 'Turkey',
@@ -65,32 +70,12 @@ const AIRPORT_COUNTRIES = {
     'DXB': 'UAE', 'AUH': 'UAE', 'DOH': 'Qatar', 'RUH': 'Saudi Arabia',
     // Asia
     'SIN': 'Singapore', 'BKK': 'Thailand', 'HKG': 'Hong Kong',
-    'NRT': 'Japan', 'ICN': 'South Korea', 'PEK': 'China', 'BOM': 'India', 'DEL': 'India',
+    'NRT': 'Japan', 'ICN': 'South Korea', 'PEK': 'China'
 };
-
-// Route distances in kilometers (for realistic pricing)
-const ROUTE_DISTANCES = {
-    // Turkey routes
-    'IST-DXB': 3100, 'SAW-DXB': 3100, 'IST-JFK': 7800, 'IST-LHR': 2500, 'IST-FRA': 1900,
-    'IST-CDG': 2400, 'IST-AMS': 2200, 'IST-AYT': 480, 'IST-ADB': 350, 'IST-ESB': 350,
-    // Europe routes
-    'LHR-CDG': 340, 'LHR-FRA': 650, 'LHR-AMS': 360, 'CDG-FRA': 450,
-    // Middle East routes
-    'DXB-LHR': 5500, 'DXB-SIN': 6200, 'DXB-BKK': 4600,
-    // US routes
-    'JFK-LAX': 4000, 'JFK-SFO': 4100, 'JFK-MIA': 1800,
-    // Transatlantic
-    'JFK-LHR': 5500, 'JFK-CDG': 5800,
-};
-
-// Popular routes with premium pricing (high demand)
-const PREMIUM_ROUTES = [
-    'IST-DXB', 'SAW-DXB', 'IST-JFK', 'IST-LHR', 'IST-FRA',
-    'JFK-LAX', 'JFK-LHR', 'LHR-CDG', 'DXB-LHR'
-];
 
 /**
  * Predict flight price based on flight attributes
+ * Matches Python implementation exactly.
  * 
  * @param {Object} params - Flight parameters
  * @param {number} params.durationMinutes - Flight duration in minutes
@@ -98,7 +83,6 @@ const PREMIUM_ROUTES = [
  * @param {boolean} params.isDirect - Whether flight is direct
  * @param {string} params.originCode - Origin airport code
  * @param {string} params.destinationCode - Destination airport code
- * @param {number} params.basePrice - Optional base price to adjust
  * @returns {Object} Prediction result with price and breakdown
  */
 function predictPrice(params) {
@@ -107,259 +91,96 @@ function predictPrice(params) {
         departureTime,
         isDirect = true,
         originCode,
-        destinationCode,
-        basePrice = null
+        destinationCode
     } = params;
 
-    // Validate inputs
-    if (!durationMinutes || durationMinutes <= 0) {
-        throw new Error('Invalid duration: must be positive number');
-    }
-    if (!departureTime) {
-        throw new Error('Invalid departure time');
-    }
-
     const depDate = new Date(departureTime);
-    if (isNaN(depDate.getTime())) {
-        throw new Error('Invalid departure time format');
+    const now = new Date();
+
+    // FEATURE 1: Duration Cost
+    const durationCost = durationMinutes * MODEL_COEFFICIENTS.duration_coef;
+
+    // FEATURE 2: Peak Hour (6-9 or 17-20)
+    const hour = depDate.getHours();
+    const isPeakHour = (hour >= 6 && hour <= 9) || (hour >= 17 && hour <= 20);
+    const peakPremium = isPeakHour ? MODEL_COEFFICIENTS.peak_hour_premium : 0;
+
+    // FEATURE 3: Days Advance (Booking logic)
+    // Diff in days (ensure positive)
+    const diffTime = depDate - now;
+    const daysUntilFlight = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+    let lastMinuteCost = 0;
+
+    if (daysUntilFlight < 7) {
+        // Last minute surge
+        const urgencyFactor = (7 - daysUntilFlight) / 7;
+        lastMinuteCost = durationCost * MODEL_COEFFICIENTS.last_minute_surge * urgencyFactor;
+    } else if (daysUntilFlight >= 7 && daysUntilFlight <= 30) {
+        // Early booking discount
+        const discountDays = Math.min(daysUntilFlight - 7, 23);
+        lastMinuteCost = -(durationCost * MODEL_COEFFICIENTS.advance_discount * discountDays);
+    } else {
+        lastMinuteCost = 0;
     }
 
-    const now = new Date();
-    const daysUntilFlight = Math.max(0, Math.floor((depDate - now) / (1000 * 60 * 60 * 24)));
-    const departureHour = depDate.getHours();
-    const dayOfWeek = depDate.getDay();
-    const month = depDate.getMonth(); // 0-11
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const isPeakHour = (departureHour >= 6 && departureHour <= 9) || (departureHour >= 17 && departureHour <= 20);
-    const isOffPeak = departureHour >= 22 || departureHour < 5;
+    // FEATURE 4: Direct Flight
+    const directPremium = isDirect ? MODEL_COEFFICIENTS.direct_flight_premium : 0;
 
-    // Check if international - works for ANY airport code
-    // If airport not in our list, estimate based on duration (longer = more likely international)
-    const originCountry = AIRPORT_COUNTRIES[originCode?.toUpperCase()] || null;
-    const destCountry = AIRPORT_COUNTRIES[destinationCode?.toUpperCase()] || null;
-    
-    // If we don't know the countries, estimate international based on duration
-    // Flights > 3 hours are likely international
+    // FEATURE 5: Route Type (International/Domestic)
+    const originCountry = AIRPORT_COUNTRIES[originCode?.toUpperCase()];
+    const destCountry = AIRPORT_COUNTRIES[destinationCode?.toUpperCase()];
+
     let isInternational = false;
     if (originCountry && destCountry) {
         isInternational = originCountry !== destCountry;
     } else {
-        // Estimate: flights longer than 180 minutes are likely international
+        // Fallback: > 3 hours implied international
         isInternational = durationMinutes > 180;
     }
 
-    // Busy months: December (11), January (0), July (6), August (7)
-    const busyMonths = [0, 6, 7, 11]; // Jan, Jul, Aug, Dec
-    const isBusyMonth = busyMonths.includes(month);
+    const internationalMultiplier = isInternational ? MODEL_COEFFICIENTS.international_multiplier : 1.0;
 
-    // Calculate route distance for distance-based pricing
-    const routeKey = `${originCode?.toUpperCase()}-${destinationCode?.toUpperCase()}`;
-    const reverseRouteKey = `${destinationCode?.toUpperCase()}-${originCode?.toUpperCase()}`;
-    let routeDistance = ROUTE_DISTANCES[routeKey] || ROUTE_DISTANCES[reverseRouteKey];
+    // FEATURE 6: Weekend (Saturday=6, Sunday=0 in JS Date.getDay())
+    // Python: Saturday=5, Sunday=6. Logic: >=5
+    const dayOfWeek = depDate.getDay(); // 0=Sun, 6=Sat
+    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+    const weekendPremium = isWeekend ? MODEL_COEFFICIENTS.weekend_premium : 0;
+
+
     
-    // Estimate distance from duration if not in our database
-    // Average commercial aircraft speed: ~800 km/h
-    if (!routeDistance && durationMinutes > 0) {
-        routeDistance = (durationMinutes / 60) * 800; // km
-    }
-    
-    // Check if premium route (high demand)
-    const isPremiumRoute = PREMIUM_ROUTES.includes(routeKey) || PREMIUM_ROUTES.includes(reverseRouteKey);
+    // Final Calculation
+    const base = MODEL_COEFFICIENTS.base_price;
+    let predictedPrice = (base + durationCost + peakPremium + directPremium + weekendPremium + lastMinuteCost) * internationalMultiplier;
 
-    // Calculate base prediction
-    // Base price scales with distance and duration for realistic pricing
-    // Minimum base price for any flight
-    let calculatedBasePrice = Math.max(120, routeDistance ? routeDistance * 0.08 : 120); // $0.08 per km minimum
-    
-    // For very short flights, use duration-based pricing
-    if (durationMinutes < 120) {
-        calculatedBasePrice = Math.max(80, durationMinutes * 0.8); // $0.8 per minute for short flights
-    }
-    
-    let predictedPrice = calculatedBasePrice;
-
-    // Duration factor - main driver of price
-    // Use realistic $/minute pricing based on route type
-    let durationCoef;
-    if (isInternational) {
-        // International: $0.35-0.50 per minute
-        durationCoef = 0.40;
-    } else {
-        // Domestic: $0.25-0.35 per minute
-        durationCoef = 0.30;
-    }
-    
-    // Override with model coefficient if available and reasonable
-    if (MODEL_COEFFICIENTS.durationCoef) {
-        let modelCoef = MODEL_COEFFICIENTS.durationCoef;
-        // If coefficient is very large (> 10), it's likely feature importance, scale it
-        if (modelCoef > 10) {
-            modelCoef = modelCoef / 100; // Scale to realistic $/minute
-        }
-        // Use model coefficient if it's in reasonable range (0.2-0.6)
-        if (modelCoef >= 0.2 && modelCoef <= 0.6) {
-            durationCoef = modelCoef;
-        }
-    }
-    
-    const durationCost = durationMinutes * durationCoef;
-    predictedPrice += durationCost;
-    
-    // Premium route surcharge (high demand routes)
-    if (isPremiumRoute) {
-        predictedPrice *= 1.15; // 15% premium for popular routes
-    }
-
-    // Peak hour premium (business travelers)
-    // Use trained coefficient (scaled appropriately)
-    if (isPeakHour) {
-        const peakCoef = MODEL_COEFFICIENTS.peakHourCoef || 30;
-        // If coefficient is small (< 10), it's likely a multiplier, otherwise additive
-        if (peakCoef < 10) {
-            predictedPrice *= (1 + peakCoef / 100);
-        } else {
-            predictedPrice += peakCoef;
-        }
-    }
-
-    // Off-peak discount (late night/early morning)
-    if (isOffPeak) {
-        predictedPrice *= (1 - MODEL_COEFFICIENTS.offPeakDiscount);
-    }
-
-    // Weekend premium (leisure travelers)
-    if (isWeekend) {
-        const weekendCoef = MODEL_COEFFICIENTS.weekendCoef || 40;
-        if (weekendCoef < 10) {
-            predictedPrice *= (1 + weekendCoef / 100);
-        } else {
-            predictedPrice += weekendCoef;
-        }
-    }
-
-    // Direct flight premium (convenience)
-    if (isDirect) {
-        const directCoef = MODEL_COEFFICIENTS.directFlightPremium || 50;
-        if (directCoef < 10) {
-            predictedPrice *= (1 + directCoef / 100);
-        } else {
-            predictedPrice += directCoef;
-        }
-    }
-
-    // Busy month premium (holiday seasons)
-    if (isBusyMonth) {
-        predictedPrice *= MODEL_COEFFICIENTS.busyMonthMultiplier;
-    }
-
-    // Last minute surcharge (urgency pricing)
-    if (daysUntilFlight < 7) {
-        const urgencyFactor = (7 - daysUntilFlight) / 7; // 0 to 1
-        predictedPrice *= (1 + MODEL_COEFFICIENTS.lastMinuteCoef * urgencyFactor);
-    }
-
-    // Advance booking discount (early bird pricing)
-    if (daysUntilFlight > 7 && daysUntilFlight <= 30) {
-        const discountDays = Math.min(daysUntilFlight - 7, 23); // Max 23 days discount
-        predictedPrice *= (1 - MODEL_COEFFICIENTS.advanceBookingDiscount * discountDays);
-    }
-
-    // International multiplier (cross-border fees, taxes, longer routes)
-    // Use realistic multiplier (1.4-1.8x) instead of model's 1.0
-    if (isInternational) {
-        const intlMultiplier = MODEL_COEFFICIENTS.internationalMultiplier || 1.0;
-        // If model says 1.0, use realistic 1.6x instead
-        const realisticMultiplier = intlMultiplier >= 1.3 ? intlMultiplier : 1.6;
-        predictedPrice *= realisticMultiplier;
-    }
-
-    // If base price provided, blend with prediction (60% prediction, 40% base)
-    // This allows admin to override if needed
-    if (basePrice && basePrice > 0) {
-        predictedPrice = predictedPrice * 0.6 + basePrice * 0.4;
-    }
-
-    // Round to 2 decimal places
-    predictedPrice = Math.round(predictedPrice * 100) / 100;
-
-    // Ensure realistic minimum price based on duration and route type
-    let minPrice;
-    if (isInternational) {
-        // International: minimum $150 for short, $250+ for long
-        minPrice = Math.max(150, durationMinutes * 0.5);
-    } else {
-        // Domestic: minimum $80 for short, $120+ for long
-        minPrice = Math.max(80, durationMinutes * 0.4);
-    }
+    // Minimum Price Security
+    const minPrice = isInternational ? 150 : 80;
     predictedPrice = Math.max(predictedPrice, minPrice);
 
-    // Cap maximum price (sanity check)
-    // International: max $8/min, Domestic: max $5/min
-    const maxPricePerMin = isInternational ? 8 : 5;
-    const maxPrice = durationMinutes * maxPricePerMin;
-    predictedPrice = Math.min(predictedPrice, maxPrice);
+    // Rounding
+    predictedPrice = Math.round(predictedPrice * 100) / 100;
 
-    // Calculate dynamic confidence based on prediction quality
-    // Higher confidence for:
-    // - Flights with known routes (in our airport list)
-    // - Reasonable duration (60-720 minutes)
-    // - Not extreme prices
-    let dynamicConfidence = MODEL_CONFIDENCE;
-    
-    // Adjust confidence based on route knowledge
-    if (!originCountry || !destCountry) {
-        dynamicConfidence *= 0.95; // Slightly lower if route unknown
-    }
-    
-    // Adjust for extreme durations
-    if (durationMinutes < 60 || durationMinutes > 720) {
-        dynamicConfidence *= 0.92;
-    }
-    
-    // Adjust for extreme prices (likely prediction error)
-    const pricePerMinute = predictedPrice / durationMinutes;
-    if (pricePerMinute < 0.2 || pricePerMinute > 3.0) {
-        dynamicConfidence *= 0.90;
-    }
-    
-    // Ensure confidence is reasonable
-    dynamicConfidence = Math.max(0.75, Math.min(0.98, dynamicConfidence));
-    
     return {
-        predictedPrice,
+        price: predictedPrice, // 'price' to match Python return shape generally, or keep 'predictedPrice' if used elsewhere
+        predictedPrice: predictedPrice, // Keeping mostly compatible with existing JS calls
         currency: 'USD',
-        confidence: Math.round(dynamicConfidence * 100) / 100, // Dynamic confidence
-        factors: {
-            baseCost: Math.round(calculatedBasePrice * 100) / 100,
-            durationCost: Math.round(durationCost * 100) / 100,
-            routeDistance: routeDistance ? Math.round(routeDistance) : null,
-            isPremiumRoute: isPremiumRoute,
-            peakHourPremium: isPeakHour ? (MODEL_COEFFICIENTS.peakHourCoef < 10 ? 
-                Math.round((predictedPrice * MODEL_COEFFICIENTS.peakHourCoef / 100) * 100) / 100 : 
-                MODEL_COEFFICIENTS.peakHourCoef) : 0,
-            offPeakDiscount: isOffPeak ? Math.round((MODEL_COEFFICIENTS.offPeakDiscount * 100) * 100) / 100 : 0,
-            weekendPremium: isWeekend ? (MODEL_COEFFICIENTS.weekendCoef < 10 ? 
-                Math.round((predictedPrice * MODEL_COEFFICIENTS.weekendCoef / 100) * 100) / 100 : 
-                MODEL_COEFFICIENTS.weekendCoef) : 0,
-            directFlightPremium: isDirect ? (MODEL_COEFFICIENTS.directFlightPremium < 10 ? 
-                Math.round((predictedPrice * MODEL_COEFFICIENTS.directFlightPremium / 100) * 100) / 100 : 
-                MODEL_COEFFICIENTS.directFlightPremium) : 0,
-            busyMonthMultiplier: isBusyMonth ? MODEL_COEFFICIENTS.busyMonthMultiplier : 1,
-            internationalMultiplier: isInternational ? (MODEL_COEFFICIENTS.internationalMultiplier >= 1.3 ? 
-                MODEL_COEFFICIENTS.internationalMultiplier : 1.6) : 1,
-            daysUntilFlight,
-            isLastMinute: daysUntilFlight < 7,
-            routeType: isInternational ? 'international' : 'domestic',
-            estimatedRoute: originCountry && destCountry ? `${originCountry} → ${destCountry}` : 'estimated'
+        confidence: MODEL_CONFIDENCE,
+        features_used: {
+            duration_minutes: durationMinutes,
+            peak_hour: isPeakHour,
+            days_advance: daysUntilFlight,
+            is_direct: isDirect,
+            route_type: isInternational ? 'international' : 'domestic',
+            is_weekend: isWeekend
         },
-        metadata: {
-            model: 'randomforest-v2-enhanced',
-            trainedOn: 'kaggle-datasets-real-with-route-pricing',
-            features: ['duration', 'departure_hour', 'day_of_week', 'month', 'days_advance', 'is_direct', 'route_type', 'is_peak_hour', 'is_weekend', 'is_busy_month', 'route_distance', 'is_premium_route'],
-            r2Score: 0.977,
-            mae: 31.40,
-            generalization: 'works-for-any-destination-with-realistic-pricing',
-            pricingModel: 'distance-and-duration-based-with-premium-routes'
+        breakdown: {
+            base_cost: base,
+            duration_cost: Math.round(durationCost * 100) / 100,
+            peak_premium: peakPremium,
+            weekend_premium: weekendPremium,
+            direct_premium: directPremium,
+            booking_timing: Math.round(lastMinuteCost * 100) / 100,
+            international_multiplier: internationalMultiplier
         }
     };
 }
@@ -370,7 +191,13 @@ function predictPrice(params) {
 function predictPrices(flights) {
     return flights.map(flight => ({
         flightId: flight.id,
-        ...predictPrice(flight)
+        ...predictPrice({
+            durationMinutes: flight.duration_minutes,
+            departureTime: flight.departure_time,
+            isDirect: flight.is_direct,
+            originCode: flight.origin_code || flight.origin?.code,
+            destinationCode: flight.dest_code || flight.destination?.code
+        })
     }));
 }
 

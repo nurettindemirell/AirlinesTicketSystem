@@ -255,7 +255,7 @@ const sendPointsNotificationEmail = async (member) => {
           <p>Keep flying to earn more rewards!</p>
         </div>
         <div style="background: #333; color: white; padding: 20px; text-align: center; font-size: 12px;">
-          <p>© 2024 Flight System - SE4458 Project</p>
+          <p>© 2026 Fly with Bilet</p>
         </div>
       </div>
     `
@@ -368,10 +368,10 @@ const sendBookingConfirmationEmail = async (booking) => {
                             <p style="margin: 10px 0 0 0; color: #64748b;">Please arrive at the airport at least 2 hours before domestic flights and 3 hours before international flights.</p>
                         </div>
                         
-                        <p style="margin-top: 25px; color: #64748b; text-align: center;">Thank you for choosing FlightSystem! ✈️</p>
+                        <p style="margin-top: 25px; color: #64748b; text-align: center;">Thank you for choosing Fly with Bilet! ✈️</p>
                     </div>
                     <div style="background: #1e293b; color: white; padding: 20px; text-align: center; font-size: 12px;">
-                        <p style="margin: 0;">© 2026 FlightSystem - SE4458 Final Project</p>
+                        <p style="margin: 0;">© 2026 Fly with Bilet</p>
                     </div>
                 </div>
             `
