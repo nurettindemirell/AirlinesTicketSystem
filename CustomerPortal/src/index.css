@@ -1,0 +1,377 @@
+/* Fly with Bilet - Temiz Modern Arayüz */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary: #ff9800;
+    --primary-hover: #f57c00;
+    --secondary: #ffc107;
+    --secondary-hover: #ffa000;
+    --bg: #f5f5f5;
+    --card-bg: white;
+    --text: #212121;
+    --text-light: #757575;
+    --border: #e0e0e0;
+    --hover-bg: #fafafa;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', -apple-system, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    font-size: 15px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+#root {
+    width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
+    background: white;
+    min-height: 100vh;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+}
+
+/* Konteyner */
+.container {
+    max-width: 100%;
+    padding: 1.5rem;
+}
+
+/* Başlık */
+header {
+    background: white;
+    border-bottom: 2px solid var(--border);
+    padding: 1rem 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    min-height: 80px;
+}
+
+nav {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    position: absolute;
+    right: 2rem;
+    padding: 0;
+}
+
+.logo {
+    font-weight: 800;
+    font-size: 32px;
+    /* Daha Büyük */
+    color: var(--primary);
+    text-decoration: none;
+    letter-spacing: -1px;
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+}
+
+/* Sol Link (Uçuş Rezervasyonu) */
+.left-link {
+    position: absolute;
+    left: 2rem;
+    color: var(--text);
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 99px;
+    transition: all 0.2s;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.left-link:hover {
+    background: #fff3e0;
+    color: var(--primary);
+}
+
+.nav-links {
+    /* Etikette kullanılan eski sınıf, ancak stiller yukarıdaki nav etiketi seçicilerine taşındı */
+}
+
+.nav-links a {
+    color: var(--text);
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 99px;
+    /* Hap şekli */
+    transition: all 0.2s;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.nav-links a:hover {
+    background: #fff3e0;
+    color: var(--primary);
+}
+
+/* Karşılama Bölümü (Hero) */
+.hero {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe0b2 100%);
+    border-radius: 12px;
+    margin: 1.5rem;
+}
+
+.hero h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+    letter-spacing: -0.5px;
+}
+
+.hero p {
+    font-size: 16px;
+    color: var(--text-light);
+}
+
+/* Arama Kutusu */
+.search-box {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin: 0 1.5rem 1.5rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.search-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+/* Form Elemanları */
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    background: white;
+    color: var(--text);
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Düğmeler */
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* Uçuş Kartları */
+.flight-card {
+    background: white;
+    padding: 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    margin: 0 1.5rem 12px 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s;
+}
+
+.flight-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.flight-route {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.time {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.price {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+}
+
+/* Üye Kulübü */
+.miles-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: var(--bg);
+}
+
+.miles-container {
+    width: 100%;
+}
+
+.auth-card,
+.profile-card {
+    background: white;
+    padding: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.tab {
+    padding: 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: all 0.2s;
+}
+
+.tab.active {
+    border-bottom-color: var(--primary);
+    color: var(--primary);
+}
+
+/* Uyarılar */
+.alert {
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid;
+}
+
+.alert-error {
+    background: #ffebee;
+    border-color: #f44336;
+    color: #c62828;
+}
+
+.alert-info {
+    background: #fff3e0;
+    border-color: var(--primary);
+    color: #e65100;
+}
+
+/* Kartlar */
+.card {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Sonuçlar */
+.results-container {
+    margin-top: 1.5rem;
+}
+
+.results-container h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 1.5rem 1rem 1.5rem;
+    color: var(--text);
+}
+
+/* Duyarlı (Responsive) */
+@media (max-width: 768px) {
+    #root {
+        max-width: 100%;
+    }
+
+    .hero h1 {
+        font-size: 26px;
+    }
+
+    .nav-links {
+        gap: 0.5rem;
+    }
+
+    .nav-links a {
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+}
