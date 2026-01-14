@@ -5,7 +5,7 @@ const awsConfig = {
             userPoolClientId: import.meta.env.VITE_AWS_COGNITO_CLIENT_ID,
             loginWith: {
                 email: true,
-            },
+            },            
             signUpVerificationMethod: 'code',
             userAttributes: {
                 email: {
