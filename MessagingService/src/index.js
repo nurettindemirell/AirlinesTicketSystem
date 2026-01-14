@@ -11,8 +11,7 @@ const PORT = process.env.PORT || 3003;
 app.use(cors());
 app.use(express.json());
 
-// ============================================
-// EMAIL AYARLARI (Gmail SMTP kullanıyoruz)
+// EMAIL AYARLARI (Gmail SMTP kullanıldı)
 // ============================================
 let emailConfigured = false;
 
@@ -29,7 +28,7 @@ const transporter = process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
     })
     : null;
 
-// Başlangıçta mail ayarlarını kontrol et (zaman aşımıyla birlikte)
+// Başlangıçta mail ayarlarını kontrol et (zaman aşımıyla birlikte tab)
 const verifyEmail = async () => {
     if (!transporter) {
         console.log('⚠️  Email not configured - GMAIL_USER or GMAIL_APP_PASSWORD missing');
@@ -57,10 +56,14 @@ const verifyEmail = async () => {
     }
 };
 
-// Mail kontrolünü başlat (bekletme yapmaz, non-blocking)
+
+
+// Mail kontrolünü başlat (bekletme yapmaz)
 setImmediate(verifyEmail);
 
-// ============================================
+
+
+
 // RABBITMQ AYARLARI (Mesaj kuyruğu)
 // ============================================
 let rabbitChannel = null;
@@ -78,18 +81,18 @@ const QUEUES = {
 const connectRabbitMQ = async () => {
     try {
         if (!process.env.RABBITMQ_URL) {
-            console.log('⚠️  RABBITMQ_URL not configured - queue functionality disabled');
+            console.log('  RABBITMQ_URL not configured - queue functionality disabled');
             return;
         }
 
         if (rabbitRetryCount >= MAX_RABBIT_RETRIES) {
-            console.log(`⚠️  RabbitMQ max retries (${MAX_RABBIT_RETRIES}) reached. Queue functionality disabled.`);
+            console.log(`  RabbitMQ max retries (${MAX_RABBIT_RETRIES}) reached. Queue functionality disabled.`);
             console.log('   Restart the service to try again.');
             return;
         }
 
         rabbitRetryCount++;
-        console.log(`🔄 RabbitMQ connection attempt ${rabbitRetryCount}/${MAX_RABBIT_RETRIES}...`);
+        console.log(` RabbitMQ connection attempt ${rabbitRetryCount}/${MAX_RABBIT_RETRIES}...`);
 
         // Bağlantı zaman aşımı ekle
         const connectPromise = amqp.connect(process.env.RABBITMQ_URL);
@@ -109,6 +112,9 @@ const connectRabbitMQ = async () => {
         console.log('✅ Connected to RabbitMQ');
         rabbitRetryCount = 0; // Reset on successful connection
 
+
+
+        
         // Start consuming messages
         startConsumers();
 
@@ -141,10 +147,8 @@ const connectRabbitMQ = async () => {
         }
     }
 };
-
-// ============================================
 // EMAIL SENDING FUNCTIONS
-// ============================================
+
 
 const sendWelcomeEmail = async (member) => {
     const mailOptions = {
@@ -423,7 +427,9 @@ const startConsumers = () => {
         }
     });
 
-    // Booking confirmation consumer
+
+    
+    //Booking confirmation customerr
     rabbitChannel.consume(QUEUES.BOOKING_CONFIRMATION, async (msg) => {
         if (msg) {
             try {
@@ -456,9 +462,9 @@ const startConsumers = () => {
     console.log('📬 Queue consumers started');
 };
 
-// ============================================
-// HEALTH ENDPOINTS
-// ============================================
+
+// HEALTH ENDPOINTS (kontorl)
+
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -477,9 +483,10 @@ app.get('/api/v1/notifications/health', (req, res) => {
     });
 });
 
-// ============================================
+
+
 // API ENDPOINTS (for internal service calls)
-// ============================================
+
 
 // POST /api/v1/notifications/welcome - Queue welcome email
 app.post('/api/v1/notifications/welcome', async (req, res) => {
@@ -567,9 +574,9 @@ app.post('/api/v1/notifications/test', async (req, res) => {
     }
 });
 
-// ============================================
-// START SERVER
-// ============================================
+
+// START SERVER (())
+
 app.listen(PORT, () => {
     console.log(`📧 Notification Service running on http://localhost:${PORT}`);
 
