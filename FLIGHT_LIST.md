@@ -1,6 +1,6 @@
 # Fly with Bilet - Uçuş Listesi
 
-Sistemde toplam **601 uçuş** var.
+Sistemde toplam **601(değişkenlik gösterebilir ekle- çıkarla) uçuş** var.
 
 ## Test İçin Popüler Rotalar
 
@@ -21,6 +21,8 @@ Sistemde toplam **601 uçuş** var.
 ### İstanbul Sabiha Gökçen → Amsterdam (SAW → AMS)
 - **Fiyat:** $200
 - **Miles:** 2000 puan
+
+
 
 ## Örnek Test Senaryosu
 
@@ -59,13 +61,13 @@ FR423,FRA → DXB,15.01.2026 07:00,$550
 1. Login ol (Member Club)
 2. Istanbul → New York uçuşu seç
 3. "Pay $800" (MONEY) ile öde
-4. ✅ 8000 miles kazanacaksın
+4.  8000 miles(MemberCLub) kazanacaksın
 
 ### 2. Miles İle Ödeme Testi
 1. Yukarıdaki testten sonra 8000 milesın olacak
 2. Tekrar Istanbul → New York seç
 3. "Pay 8000 Miles" butonuna bas
-4. ✅ Miles ile ücretsiz bilet al
+4.  Miles ile ücretsiz bilet al
 
 ### 3. Koltuk Azalma Testi
 1. Bir uçuş seç, kalan koltuk sayısını not et
