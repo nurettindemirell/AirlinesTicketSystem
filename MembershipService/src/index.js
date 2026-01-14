@@ -9,12 +9,14 @@ const db = require('./utils/db');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Middleware
+
+
+// Middleware ??
 app.use(cors());
 app.use(express.json());
 
 // ============================================
-// RABBITMQ AYARLARI (Mesaj kuyruğu)
+// RABBITMQ AYARLARI (Mesaj kuyruğu oluşturumu)
 // ============================================
 let rabbitChannel = null;
 let rabbitRetryCount = 0;
@@ -52,7 +54,7 @@ const connectRabbitMQ = async () => {
         await rabbitChannel.assertQueue(QUEUES.WELCOME_EMAIL, { durable: true });
         await rabbitChannel.assertQueue(QUEUES.POINTS_NOTIFICATION, { durable: true });
 
-        console.log('✅ Connected to RabbitMQ');
+        console.log(' Connected to RabbitMQ');
         rabbitRetryCount = 0;
 
         connection.on('error', (err) => {
@@ -71,7 +73,7 @@ const connectRabbitMQ = async () => {
         });
 
     } catch (error) {
-        console.log('⚠️  RabbitMQ connection failed:', error.message);
+        console.log('  RabbitMQ connection failed:', error.message);
         rabbitChannel = null;
         if (rabbitRetryCount < MAX_RABBIT_RETRIES) {
             setTimeout(connectRabbitMQ, 5000);
@@ -108,6 +110,8 @@ app.get('/health', (req, res) => {
 app.get('/api/v1/miles/health', (req, res) => {
     res.json({ status: 'ok', endpoint: 'miles', timestamp: new Date().toISOString() });
 });
+
+
 
 // ============================================
 // MEMBER ENDPOINTS
@@ -383,7 +387,7 @@ app.post('/api/v1/miles/redeem', requireServiceAuth, async (req, res) => {
 const processCompletedFlights = async () => {
     console.log('🌙 Starting nightly miles processing...');
     try {
-        // İniş yapmış (LANDED) ama henüz işlenmemiş uçuşları getir
+        // landed ama henüz işlenmemiş uçuşları getir
         const { data: completedFlights } = await db.query(`
             SELECT id, duration_minutes FROM flights 
             WHERE status = 'LANDED' 
@@ -448,17 +452,19 @@ const processCompletedFlights = async () => {
             );
         }
 
-        console.log(`✅ Nightly processing complete: processed ${completedFlights.length} flights`);
+        console.log(` Nightly processing complete: processed ${completedFlights.length} flights`);
 
     } catch (error) {
         console.error('Error in nightly processing:', error);
     }
 };
 
-// Gece 2'de çalışacak şekilde ayarla (Cron job)
+// Gece 2 de çalışması lazım 
 cron.schedule('0 2 * * *', () => {
     processCompletedFlights();
 });
+
+
 
 // Manual trigger endpoint for testing
 app.post('/api/v1/miles/process-flights', requireServiceAuth, async (req, res) => {
