@@ -6,20 +6,25 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS middleware (Sadece CORS için, body parsing yok proxy rotalarında)
+// Middleware
 app.use(cors());
 
-// Servis Adresleri (URL'leri)
+
+
+// Servis Adresleri (URLler)
 const FLIGHT_SERVICE_URL = process.env.FLIGHT_SERVICE_URL || 'http://localhost:3001';
 const MILES_SERVICE_URL = process.env.MILES_SERVICE_URL || 'http://localhost:3002';
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3003';
 
-// Sağlık kontrolü (burada body parsing lazım olabilir)
+// Klasik sağlık
 app.get('/health', express.json(), (req, res) => {
   res.json({ status: 'ok', service: 'gateway', timestamp: new Date().toISOString() });
 });
 
-// Proxy ayarları (Yönlendirme yardımcısı fonksiyon)
+
+
+
+// Proxy ayarları (Yönlendirmeye yardımcı kısım)
 const createProxy = (target, pathPrefix) => createProxyMiddleware({
   target,
   changeOrigin: true,
@@ -43,7 +48,7 @@ const createProxy = (target, pathPrefix) => createProxyMiddleware({
   }
 });
 
-// Proxy rotaları - Admin işlemleri (flight-service'e gider)
+// Proxy rotaları - Admin işlemleri (FlightService'e gider)
 app.use('/api/v1/admin', createProxy(FLIGHT_SERVICE_URL, '/api/v1/admin'));
 
 // Proxy routes - Flight search endpoints (FlighService)
@@ -55,13 +60,14 @@ app.use('/api/v1/tickets', createProxy(FLIGHT_SERVICE_URL, '/api/v1/tickets'));
 // Proxy routes - Bookings endpoints (FlightService)
 app.use('/api/v1/bookings', createProxy(FLIGHT_SERVICE_URL, '/api/v1/bookings'));
 
-// Proxy rotaları - Mil işlemleri (miles-service'e gider)
+// Proxy rotaları - Mil işlemleri (MembershipSercie'e gider)
 app.use('/api/v1/miles', createProxy(MILES_SERVICE_URL, '/api/v1/miles'));
 
 // Proxy routes - Notification endpoints (MessagingService)
 app.use('/api/v1/notifications', createProxy(NOTIFICATION_SERVICE_URL, '/api/v1/notifications'));
 
-// 404 Hatası (Eşleşmeyen tüm rotalar için)
+
+// 404 Hatası (Eşleşemeyen tüm rotalar için geçerli)
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', path: req.originalUrl });
 });
