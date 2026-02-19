@@ -23,12 +23,6 @@ The project is currently configured to run on the local machine (localhost):
 
 I used a **Microservices Architecture** for this project. Each specific task runs in its own service, ensuring that if one part fails, the others continue to work.
 
-### System Schema
-
-The diagram below shows how the services communicate with each other:
-
-![Architecture Diagram]
-
 ### What Do the Services Do?
 1.  **Gateway Service:** Acts like a traffic controller. It routes all incoming requests to the relevant service.
 2.  **Flight Service:** The core component. It lists flights, handles ticket sales (inventory management), and includes ML-based price prediction.
