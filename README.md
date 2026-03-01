@@ -3,7 +3,8 @@
 Hello! This project is a modern, microservices-based airline ticketing system. Users can search for flights, buy tickets (using money or miles), and manage their bookings.
 
 **GitHub Repository:** [https://github.com/nurettindemirell/AirlinesTicketSystem](https://github.com/nurettindemirell/AirlinesTicketSystem)
-**Youtube Presentatiın Video:** [https://www.youtube.com/watch?v=qleFP-kn3pk]
+
+**Youtube Presentation Video:** [https://www.youtube.com/watch?v=qleFP-kn3pk]
 ---
 
 ## Application URLs (Deployed Locally)
